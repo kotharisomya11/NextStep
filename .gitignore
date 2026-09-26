@@ -1,0 +1,42 @@
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE / Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+~$*
+.DS_Store
+
+# Logs
+logs/
+*.log
+
+# pytest
+.pytest_cache/
+
+# Node (if applicable in frontend)
+node_modules/
+package-lock.json
+
+# Build files
+dist/
+build/
+*.egg-info/
+
+# Large archives
+*.zip
+*.tar.gz
+*.rar
