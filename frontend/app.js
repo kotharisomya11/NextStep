@@ -1,6 +1,9 @@
 const API_URL = '';
 const SESSION_ID = 'frontend-session-' + Math.random().toString(36).substring(7);
 
+// Jugaad #3: confirmation-fatigue mode — toggled by the user via the sidebar toggle.
+let autoApproveEnabled = false;
+
 const chatHistory = document.getElementById('chat-history');
 const chatForm = document.getElementById('chat-form');
 const userInput = document.getElementById('user-input');
@@ -99,6 +102,42 @@ const MOCK_RESPONSES = {
         reason: 'The 5-second cancel window successfully intercepted the execution.',
         recommend: 'Action has been successfully aborted. The draft was not sent.',
         next_step: 'What would you like to do instead?'
+    },
+    'jugad3': {
+        status: 'ok',
+        understanding: 'You have enabled auto-approve mode. You asked NextStep to stop asking for confirmations and just act.',
+        reason: 'The user has explicitly opted out of the confirmation gate for this session. Any draft action — such as a message to a manager or landlord — is executed immediately without a Confirm/Cancel prompt.',
+        recommend: 'Auto-approve is now ON. The next message you draft will be sent without a confirmation step. You can turn it off at any time using the toggle in the sidebar.',
+        next_step: 'Try describing a situation that would normally trigger a draft message — it will execute immediately.',
+        pending_action: {
+            action_id: 'mock-auto-' + Date.now(),
+            tool: 'draft_message',
+            recipient: 'Prof. Sharma',
+            purpose: 'Request viva postponement due to family emergency',
+            draft_text: 'Dear Prof. Sharma, I am writing to urgently request a postponement of my viva scheduled for tomorrow at 10am due to a family medical emergency. I would be grateful for any flexibility. — Riya',
+            requires_confirmation: false,
+            auto_approved: true
+        },
+        auto_approve_mode: true
+    },
+    // Scenario 8 — Curveball: user is annoyed by confirmations and demands the agent just act.
+    // This maps to the same auto-approve flow as jugad3, but is now a first-class numbered scenario.
+    'curveball': {
+        status: 'ok',
+        understanding: 'You are frustrated by repeated confirmation prompts and want NextStep to act immediately without asking each time.',
+        reason: 'This is a reasonable frustration. Confirmation gates protect against the wrong action going out — but if you already know what you want, the friction defeats the purpose. Auto-approve lets you trade the pre-flight check for speed, while keeping a full audit trail of everything that executes.',
+        recommend: 'Auto-approve mode is now ON for this session. Any draft action (e.g. an email to your manager or landlord) will execute immediately — no Confirm / Cancel card. The action is still recorded with a UUID and timestamp so there is always an audit trail. You can flip it back off at any time using the sidebar toggle.',
+        next_step: 'Describe your situation and I will handle it end-to-end without stopping to ask.',
+        pending_action: {
+            action_id: 'mock-curveball-' + Date.now(),
+            tool: 'draft_message',
+            recipient: 'Your Manager',
+            purpose: 'Update on project status — executed immediately (auto-approve ON)',
+            draft_text: 'Hi, just wanted to give you a quick update on where things stand. I am making progress and will have more details to share shortly. Thanks for your patience.',
+            requires_confirmation: false,
+            auto_approved: true
+        },
+        auto_approve_mode: true
     }
 };
 
@@ -113,6 +152,38 @@ window.simulateScenario = function(scenarioId, promptText) {
         removeTypingIndicator(typingId);
         handleBotResponse(MOCK_RESPONSES[scenarioId]);
     }, 800);
+}
+
+// Jugaad #3: toggle auto-approve for this session (frontend + backend in sync).
+window.toggleAutoApprove = async function() {
+    autoApproveEnabled = !autoApproveEnabled;
+    const toggle = document.getElementById('auto-approve-toggle');
+    const label  = document.getElementById('auto-approve-label');
+
+    // Optimistic UI update
+    if (autoApproveEnabled) {
+        toggle.classList.add('active');
+        label.textContent = 'Auto-approve: ON';
+    } else {
+        toggle.classList.remove('active');
+        label.textContent = 'Auto-approve: OFF';
+    }
+
+    // Sync with backend
+    try {
+        await fetch(`${API_URL}/agent/auto-approve/${SESSION_ID}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ enabled: autoApproveEnabled })
+        });
+    } catch (err) {
+        console.warn('Could not sync auto-approve with backend:', err);
+    }
+
+    const modeText = autoApproveEnabled
+        ? '⚡ Auto-approve mode is now ON — actions will execute immediately without asking for confirmation.'
+        : '🔒 Auto-approve mode is now OFF — you will see Confirm / Cancel for any draft action.';
+    appendMessage('system', modeText);
 }
 
 function appendMessage(sender, text, rawHtml = false) {
@@ -189,27 +260,51 @@ function handleBotResponse(data) {
         htmlContent += `<div class="response-section injection-warning">⚠️ Prompt-injection attempt was detected and ignored.</div>`;
     }
 
-    // Pending action card (requires user confirmation)
+    // Pending action card (requires user confirmation OR auto-approved)
     if (data.pending_action) {
         const action = data.pending_action;
-        htmlContent += `
-        <div class="suggested-actions">
-            <strong>Pending Action (requires your confirmation):</strong>
-            <div class="action-card" id="action-card-${action.action_id}">
-                <div class="action-header">
-                    <span class="action-type">${action.tool || 'action'}</span>
+        const isAutoApproved = action.auto_approved === true;
+
+        if (isAutoApproved) {
+            // Jugaad #3: no confirmation needed — show a compact "auto-approved" card.
+            htmlContent += `
+            <div class="suggested-actions auto-approved-card">
+                <strong>Action executed automatically:</strong>
+                <div class="action-card" id="action-card-${action.action_id}">
+                    <div class="action-header">
+                        <span class="action-type">${action.tool || 'action'}</span>
+                        <span class="auto-approve-badge">⚡ Auto-approved</span>
+                    </div>
+                    <div class="action-details">`;
+            if (action.recipient)  htmlContent += `<strong>To:</strong> ${action.recipient}<br>`;
+            if (action.purpose)    htmlContent += `<strong>Purpose:</strong> ${action.purpose}<br>`;
+            if (action.draft_text) htmlContent += `<strong>Draft:</strong> ${action.draft_text}`;
+            htmlContent += `</div>
+                    <div class="action-buttons">
+                        <span class="action-result result-success">✓ Sent without confirmation (auto-approve mode)</span>
+                    </div>
                 </div>
-                <div class="action-details">`;
-        if (action.recipient) htmlContent += `<strong>To:</strong> ${action.recipient}<br>`;
-        if (action.purpose)   htmlContent += `<strong>Purpose:</strong> ${action.purpose}<br>`;
-        if (action.draft_text) htmlContent += `<strong>Draft:</strong> ${action.draft_text}`;
-        htmlContent += `</div>
-                <div class="action-buttons" id="action-btns-${action.action_id}">
-                    <button class="btn-confirm" onclick="confirmAction('${action.action_id}')">Confirm</button>
-                    <button class="btn-cancel" onclick="cancelAction('${action.action_id}')">Cancel</button>
+            </div>`;
+        } else {
+            htmlContent += `
+            <div class="suggested-actions">
+                <strong>Pending Action (requires your confirmation):</strong>
+                <div class="action-card" id="action-card-${action.action_id}">
+                    <div class="action-header">
+                        <span class="action-type">${action.tool || 'action'}</span>
+                    </div>
+                    <div class="action-details">`;
+            if (action.recipient)  htmlContent += `<strong>To:</strong> ${action.recipient}<br>`;
+            if (action.purpose)    htmlContent += `<strong>Purpose:</strong> ${action.purpose}<br>`;
+            if (action.draft_text) htmlContent += `<strong>Draft:</strong> ${action.draft_text}`;
+            htmlContent += `</div>
+                    <div class="action-buttons" id="action-btns-${action.action_id}">
+                        <button class="btn-confirm" onclick="confirmAction('${action.action_id}')">Confirm</button>
+                        <button class="btn-cancel" onclick="cancelAction('${action.action_id}')">Cancel</button>
+                    </div>
                 </div>
-            </div>
-        </div>`;
+            </div>`;
+        }
     }
 
     htmlContent += `</div>`;

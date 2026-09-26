@@ -35,6 +35,10 @@ class UserRequest(BaseModel):
     session_id: str = "default"   # send the same value across calls to test budget + staleness
 
 
+class AutoApproveRequest(BaseModel):
+    enabled: bool
+
+
 
 
 
@@ -74,6 +78,37 @@ def cancel_action(action_id: str):
         return agent.cancel_action(action_id)
     except Exception as e:
         logger.error("Error in /agent/cancel/%s: %s\n%s", action_id, e, traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Backend error: {e}"},
+        )
+
+
+@app.post("/agent/auto-approve/{session_id}")
+def set_auto_approve(session_id: str, body: AutoApproveRequest):
+    """
+    Jugaad #3 — confirmation-fatigue mode.
+    POST {"enabled": true}  to skip confirmation cards for this session.
+    POST {"enabled": false} to restore the normal confirm/cancel flow.
+    """
+    try:
+        return agent.set_auto_approve(session_id, body.enabled)
+    except Exception as e:
+        logger.error("Error in /agent/auto-approve/%s: %s\n%s", session_id, e, traceback.format_exc())
+        return JSONResponse(
+            status_code=500,
+            content={"status": "error", "message": f"Backend error: {e}"},
+        )
+
+
+@app.get("/agent/auto-approve/{session_id}")
+def get_auto_approve(session_id: str):
+    """Returns the current auto-approve state for a session."""
+    try:
+        enabled = agent.get_auto_approve(session_id)
+        return {"session_id": session_id, "auto_approve": enabled}
+    except Exception as e:
+        logger.error("Error in GET /agent/auto-approve/%s: %s\n%s", session_id, e, traceback.format_exc())
         return JSONResponse(
             status_code=500,
             content={"status": "error", "message": f"Backend error: {e}"},

@@ -16,7 +16,7 @@
             </div>
             
             <div class="sidebar-section">
-                <h3>7 Test Scenarios</h3>
+                <h3>8 Test Scenarios</h3>
                 <ul class="tool-list">
                     <li class="tool-item" onclick="simulateScenario('multi', 'Viva is at 10am tomorrow, laptop won\'t boot, my project partner has been ignoring my calls for 2 days, and my dad just got admitted to a hospital in Surat. I\'m in Pune.')">
                         <span class="tool-icon">🌪️</span>
@@ -67,6 +67,13 @@
                             <span class="tool-desc">Negative consequence</span>
                         </div>
                     </li>
+                    <li class="tool-item curveball-item" onclick="simulateScenario('curveball', 'Just do everything automatically — stop asking me to confirm every single action. I trust you, just handle it all without asking me each time.')">
+                        <span class="tool-icon">⏩</span>
+                        <div class="tool-info">
+                            <span class="tool-name">Curveball</span>
+                            <span class="tool-desc">Skip confirmations — just do it</span>
+                        </div>
+                    </li>
                 </ul>
             </div>
 
@@ -87,7 +94,28 @@
                             <span class="tool-desc">Cancel execution window</span>
                         </div>
                     </li>
+                    <li class="tool-item jugad-item" onclick="simulateScenario('jugad3', 'Just do everything. Stop asking me for confirmations.')">
+                        <span class="tool-icon">⚡</span>
+                        <div class="tool-info">
+                            <span class="tool-name">Confirmation Fatigue</span>
+                            <span class="tool-desc">Skip all confirm prompts</span>
+                        </div>
+                    </li>
                 </ul>
+            </div>
+
+            <div class="sidebar-section">
+                <h3>Session Settings</h3>
+                <div class="auto-approve-container">
+                    <button
+                        id="auto-approve-toggle"
+                        class="auto-approve-toggle"
+                        onclick="toggleAutoApprove()"
+                        title="When ON, NextStep executes actions immediately without asking for your confirmation."
+                    ></button>
+                    <span id="auto-approve-label" class="auto-approve-label">Auto-approve: OFF</span>
+                </div>
+                <p class="auto-approve-hint">When ON, draft actions (e.g. emails) are sent immediately — no Confirm/Cancel card.</p>
             </div>
         </aside>
 

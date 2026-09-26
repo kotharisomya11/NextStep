@@ -134,6 +134,24 @@ body {
     border-color: rgba(245, 158, 11, 0.5);
 }
 
+/* ── Scenario 8 Curveball ── */
+.curveball-item {
+    background: rgba(139, 92, 246, 0.07);
+    border: 1px dashed rgba(139, 92, 246, 0.4);
+}
+.curveball-item:hover {
+    background: rgba(139, 92, 246, 0.14);
+    border-color: rgba(139, 92, 246, 0.6);
+    transform: translateX(5px);
+}
+.curveball-item .tool-name {
+    color: #a78bfa;
+}
+.curveball-item .tool-desc {
+    color: #c4b5fd;
+    opacity: 0.8;
+}
+
 .app-container {
     flex: 1;
     height: 100%;
@@ -504,3 +522,95 @@ h1 {
     font-weight: 600;
     font-size: 13px;
 }
+
+/* ── Jugaad #3: Auto-approve toggle ── */
+.auto-approve-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.auto-approve-toggle {
+    position: relative;
+    width: 48px;
+    height: 26px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    cursor: pointer;
+    transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+    flex-shrink: 0;
+    padding: 0;
+}
+
+.auto-approve-toggle::after {
+    content: '';
+    position: absolute;
+    top: 3px;
+    left: 3px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #94a3b8;
+    transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.auto-approve-toggle.active {
+    background: rgba(245, 158, 11, 0.3);
+    border-color: rgba(245, 158, 11, 0.6);
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.4);
+}
+
+.auto-approve-toggle.active::after {
+    transform: translateX(22px);
+    background: #f59e0b;
+}
+
+.auto-approve-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    transition: color 0.3s ease;
+}
+
+.auto-approve-toggle.active + .auto-approve-label,
+.auto-approve-toggle.active ~ .auto-approve-label {
+    color: #f59e0b;
+}
+
+.auto-approve-hint {
+    font-size: 11px;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+/* ── Auto-approved action card variant ── */
+.auto-approved-card {
+    border-top-color: rgba(245, 158, 11, 0.3) !important;
+}
+
+.auto-approved-card .action-card {
+    background: rgba(245, 158, 11, 0.06);
+    border-color: rgba(245, 158, 11, 0.25);
+    box-shadow: 0 0 16px rgba(245, 158, 11, 0.08);
+}
+
+.auto-approve-badge {
+    font-size: 12px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 999px;
+    background: rgba(245, 158, 11, 0.2);
+    color: #f59e0b;
+    border: 1px solid rgba(245, 158, 11, 0.4);
+    letter-spacing: 0.3px;
+    animation: pulse-amber 2s ease-in-out infinite;
+}
+
+@keyframes pulse-amber {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.4); }
+    50%       { box-shadow: 0 0 0 6px rgba(245, 158, 11, 0); }
+}
+

@@ -10,23 +10,61 @@ anyway). Every new /agent call for a session marks any earlier pending
 action for that session as "stale" so it can never be blindly confirmed.
 
 In-memory only, same caveat as budget.py.
+
+JUGAAD #3: confirmation-fatigue / auto-approve mode.
+
+Some users explicitly opt out of the confirmation gate entirely: they
+know what they asked for and find the "Confirm / Cancel" card friction.
+When a session has auto_approve=True, add_pending() immediately flips
+the action to 'executed' rather than waiting for a human POST to
+/agent/confirm. The action is still fully recorded (UUID, payload,
+timestamp) — nothing is silently discarded — but no extra click is
+needed. The flag is per-session, opt-in only, and can be toggled back
+off at any point. The frontend shows a clear "Auto-approved" badge so
+the user always sees what ran.
 """
 
 import time
 import uuid
 
 _pending: dict[str, dict] = {}
+_auto_approve: dict[str, bool] = {}  # session_id → True if user opted into auto-approve
+
+
+def set_auto_approve(session_id: str, enabled: bool) -> None:
+    """Toggle the auto-approve flag for a session."""
+    _auto_approve[session_id] = enabled
+
+
+def get_auto_approve(session_id: str) -> bool:
+    """Return True if the session has opted into auto-approve."""
+    return _auto_approve.get(session_id, False)
 
 
 def add_pending(session_id: str, tool: str, payload: dict) -> str:
     action_id = str(uuid.uuid4())
-    _pending[action_id] = {
-        "session_id": session_id,
-        "tool": tool,
-        "payload": payload,
-        "status": "pending",
-        "created_at": time.time(),
-    }
+    now = time.time()
+
+    if get_auto_approve(session_id):
+        # Jugaad #3: user opted out of confirmations — execute immediately.
+        _pending[action_id] = {
+            "session_id": session_id,
+            "tool": tool,
+            "payload": payload,
+            "status": "executed",
+            "created_at": now,
+            "executed_at": now,
+            "auto_approved": True,
+        }
+    else:
+        _pending[action_id] = {
+            "session_id": session_id,
+            "tool": tool,
+            "payload": payload,
+            "status": "pending",
+            "created_at": now,
+            "auto_approved": False,
+        }
     return action_id
 
 

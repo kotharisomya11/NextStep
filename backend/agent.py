@@ -59,12 +59,15 @@ class NextStepAgent:
                 tool=response.pending_action.tool,
                 payload=response.pending_action.model_dump(),
             )
+            auto_approved = pending_actions.get_auto_approve(session_id)
             result["pending_action"] = {
                 "action_id": action_id,
                 **response.pending_action.model_dump(),
-                "requires_confirmation": True,
+                "requires_confirmation": not auto_approved,
+                "auto_approved": auto_approved,
             }
 
+        result["auto_approve_mode"] = pending_actions.get_auto_approve(session_id)
         return result
 
     def confirm_action(self, action_id: str):
@@ -72,3 +75,10 @@ class NextStepAgent:
 
     def cancel_action(self, action_id: str):
         return pending_actions.cancel(action_id)
+
+    def set_auto_approve(self, session_id: str, enabled: bool):
+        pending_actions.set_auto_approve(session_id, enabled)
+        return {"session_id": session_id, "auto_approve": enabled}
+
+    def get_auto_approve(self, session_id: str) -> bool:
+        return pending_actions.get_auto_approve(session_id)
