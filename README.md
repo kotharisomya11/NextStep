@@ -1,4 +1,4 @@
-# NextStep — an agent that acts, but never behind your back
+# NextStep 
 
 NextStep is a small AI agent for messy real-life situations ("my viva is tomorrow, my laptop just died, and my landlord wants me out by Friday"). It doesn't just give advice — it can calculate timelines, log tasks, draft messages, and pull information. But anything that leaves the user's hands and goes to another person (a message to a manager, a landlord, a teammate) sits as a **draft** until a human explicitly confirms it.
 
